@@ -11,10 +11,10 @@ const extractToken = (req: Request) => {
 };
 
 const isAuthenticated = jwt({
-  secret: "secret", // The _secret_ to sign the JWTs
-  algorithms: ["HS256"], // JWT Algorithm
-  requestProperty: "token", // Use req.token to store the JWT
-  getToken: extractToken, // How to extract the JWT from the request
+  secret: "secret",
+  algorithms: ["HS256"],
+  requestProperty: "token",
+  getToken: extractToken,
 });
 
 export default isAuthenticated;
