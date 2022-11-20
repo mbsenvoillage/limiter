@@ -2,6 +2,7 @@ import express, { Application, NextFunction, Request, Response } from "express";
 import swaggerUI from "swagger-ui-express";
 import swaggerJsDoc from "swagger-jsdoc";
 import AuthenticationService from "./services/auth.service";
+import isAuthenticated from "./api/middlewares/isAuthenticated";
 
 const app: Application = express();
 
@@ -63,6 +64,23 @@ app.get("/tokengen", (req: Request, res: Response, next: NextFunction) => {
     console.error("Error: %o", e);
     return next(e);
   }
+});
+
+/**
+ * @openapi
+ * /private:
+ *  get:
+ *     tags:
+ *     - Auth
+ *     description: Returns an "OK" message
+ *     responses:
+ *       200:
+ *         description: "OK"
+ *       401:
+ *         description: "Unauthorized"
+ */
+app.get("/private", isAuthenticated, (req: Request, res: Response) => {
+  return res.send("OK");
 });
 
 app.listen(port, function () {
