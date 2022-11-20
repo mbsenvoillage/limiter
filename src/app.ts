@@ -1,6 +1,7 @@
-import express, { Application, Request, Response } from "express";
+import express, { Application, NextFunction, Request, Response } from "express";
 import swaggerUI from "swagger-ui-express";
 import swaggerJsDoc from "swagger-jsdoc";
+import AuthenticationService from "./services/auth.service";
 
 const app: Application = express();
 
@@ -29,17 +30,39 @@ app.use("/api-docs", swaggerUI.serve, swaggerUI.setup(specs));
 
 /**
  * @openapi
- * /health:
+ * /ping:
  *  get:
  *     tags:
- *     - Healthcheck
+ *     - Health
  *     description: Responds if the app is up and running
  *     responses:
  *       200:
- *         description: App is up and running
+ *          description: Service is up
  */
-app.get("/health", (req: Request, res: Response) => {
-  res.send("Service is up.");
+app.get("/ping", (req: Request, res: Response) => {
+  res.send("Pong");
+});
+
+/**
+ * @openapi
+ * /tokengen:
+ *  get:
+ *     tags:
+ *     - Auth
+ *     description: Returns a jwt
+ *     responses:
+ *       200:
+ *         description: jwt needed to access private routes
+ */
+app.get("/tokengen", (req: Request, res: Response, next: NextFunction) => {
+  try {
+    let auth = new AuthenticationService();
+    const token = auth.makeToken();
+    return res.json({ token }).status(200);
+  } catch (e) {
+    console.error("Error: %o", e);
+    return next(e);
+  }
 });
 
 app.listen(port, function () {
