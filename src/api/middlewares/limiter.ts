@@ -1,12 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-
-let routeScores = {
-  "/public1": 1,
-  "/public2": 2,
-  "/public3": 5,
-  "/private1": 1,
-  "/private2": 5,
-};
+import config from "../../config/index";
 
 export default function limiter(
   timeFrame: number,
@@ -14,25 +7,24 @@ export default function limiter(
   redis: any
 ) {
   return async function limit(req: Request, res: Response, next: NextFunction) {
+    let ttl: number;
+    let hits: number;
     let ip = req.ip;
     let auth = req.headers.authorization;
     let path = req.path;
-    let weight = routeScores[path as keyof typeof routeScores];
+    let routeWeights = config.limiter.routeWeights;
+    let currentRouteWeight = routeWeights[path as keyof typeof routeWeights];
     let key = auth ? auth.split(" ")[1] : ip;
-
-    console.log(key);
 
     const keyExists = await redis.exists(key);
 
-    let ttl;
-    let hits;
-    let commands = redis.multi();
-
     if (!keyExists) {
-      [hits] = await commands.incrBy(key, weight).expire(key, timeFrame).exec();
+      hits = await redis.incrBy(key, currentRouteWeight);
+      await redis.expire(key, timeFrame);
       ttl = timeFrame;
     } else {
-      [hits, ttl] = await commands.incrBy(key, weight).ttl(key).exec();
+      hits = await redis.incrBy(key, currentRouteWeight);
+      ttl = await redis.ttl(key);
     }
 
     if (hits > reqLimit) {
@@ -40,7 +32,6 @@ export default function limiter(
         error: `You have made ${hits} request but your account is currently limited at ${reqLimit} requests. You can make a request in ${ttl} s`,
       });
     }
-
     next();
   };
 }

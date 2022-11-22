@@ -1,3 +1,4 @@
+import config from "./config/index";
 import express, { Application, NextFunction, Request, Response } from "express";
 import AuthenticationService from "./services/auth.service";
 import isAuthenticated from "./api/middlewares/isAuthenticated";
@@ -11,7 +12,7 @@ async function start() {
 
   const redis = await loadRedis();
 
-  const port: number = 3001;
+  const port: number = parseInt(config.port || "3001");
 
   app.get("/ping", (req: Request, res: Response) => {
     res.send("Pong");
@@ -28,7 +29,7 @@ async function start() {
     }
   });
 
-  app.use("/public", limiter(10, 10, redis), pub);
+  app.use("/public", limiter(100, 10000000, redis), pub);
 
   app.use("/private", isAuthenticated, limiter(10, 10, redis), pri);
 
