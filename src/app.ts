@@ -28,7 +28,7 @@ async function start() {
     }
   });
 
-  app.use("/public", limiter(20, 10, redis), pub);
+  app.use("/public", limiter(10, 10, redis), pub);
 
   app.use("/private", isAuthenticated, limiter(10, 10, redis), pri);
 

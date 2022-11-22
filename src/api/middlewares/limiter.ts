@@ -1,5 +1,13 @@
 import { NextFunction, Request, Response } from "express";
 
+let routeScores = {
+  "/public1": 1,
+  "/public2": 2,
+  "/public3": 5,
+  "/private1": 1,
+  "/private2": 5,
+};
+
 export default function limiter(
   timeFrame: number,
   reqLimit: number,
@@ -8,15 +16,23 @@ export default function limiter(
   return async function limit(req: Request, res: Response, next: NextFunction) {
     let ip = req.ip;
     let auth = req.headers.authorization;
+    let path = req.path;
+    let weight = routeScores[path as keyof typeof routeScores];
     let key = auth ? auth.split(" ")[1] : ip;
+
     console.log(key);
-    const hits = await redis.incr(key);
+
+    const keyExists = await redis.exists(key);
+
     let ttl;
-    if (hits === 1) {
-      await redis.expire(key, timeFrame);
+    let hits;
+    let commands = redis.multi();
+
+    if (!keyExists) {
+      [hits] = await commands.incrBy(key, weight).expire(key, timeFrame).exec();
       ttl = timeFrame;
     } else {
-      ttl = await redis.ttl(key);
+      [hits, ttl] = await commands.incrBy(key, weight).ttl(key).exec();
     }
 
     if (hits > reqLimit) {
@@ -24,8 +40,6 @@ export default function limiter(
         error: `You have made ${hits} request but your account is currently limited at ${reqLimit} requests. You can make a request in ${ttl} s`,
       });
     }
-
-    console.log("credit used: " + hits + " ttl: " + ttl);
 
     next();
   };
