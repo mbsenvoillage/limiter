@@ -1,5 +1,6 @@
 import { expressjwt as jwt } from "express-jwt";
 import { Request } from "express";
+import config from "../../config/index";
 
 const extractToken = (req: Request) => {
   const authHeader = req.headers.authorization;
@@ -11,7 +12,7 @@ const extractToken = (req: Request) => {
 };
 
 const isAuthenticated = jwt({
-  secret: "secret",
+  secret: config.jwtSecret || "secret",
   algorithms: ["HS256"],
   requestProperty: "token",
   getToken: extractToken,

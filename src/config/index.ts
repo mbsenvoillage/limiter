@@ -7,6 +7,7 @@ if (envFound.error) {
 
 const config = {
   port: process.env.PORT,
+  jwtSecret: process.env.JWT_SECRET,
   limiter: {
     timeWindow: process.env.LIMITER_TIMEWINDOW,
     routeWeights: {
