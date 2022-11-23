@@ -12,9 +12,9 @@ const extractToken = (req: Request) => {
 };
 
 const isAuthenticated = jwt({
-  secret: config.jwtSecret || "secret",
-  algorithms: ["HS256"],
-  requestProperty: "token",
+  secret: config.auth.jwtSecret,
+  algorithms: [config.auth.jwtAlgo],
+  requestProperty: config.auth.jwtReqProp,
   getToken: extractToken,
 });
 
