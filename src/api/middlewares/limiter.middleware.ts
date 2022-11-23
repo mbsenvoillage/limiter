@@ -7,6 +7,10 @@ export default function limiter(
   redis: any
 ) {
   return async function limit(req: Request, res: Response, next: NextFunction) {
+    if (!redis || !reqLimit || !timeFrame) {
+      let e = new Error("Limiter arguments must all be truthy");
+      return next(e);
+    }
     let ttl: number;
     let hits: number;
     let ip = req.ip;
