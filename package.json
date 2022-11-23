@@ -5,7 +5,8 @@
   "main": "src/app.ts",
   "scripts": {
     "dev": "nodemon src/app.ts",
-    "test": "jest"
+    "test": "jest",
+    "build": "npx tsc"
   },
   "author": "",
   "license": "ISC",
