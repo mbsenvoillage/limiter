@@ -1,5 +1,12 @@
 import config from "../config";
-import express, { Router, Request, Response, NextFunction } from "express";
+import {
+  Router,
+  Request,
+  Response,
+  NextFunction,
+  json,
+  RequestHandler,
+} from "express";
 import privateRoutes from "./routes/private.route";
 import publicRoutes from "./routes/public.route";
 import authRoute from "./routes/auth.route";
@@ -10,7 +17,7 @@ import { RedisClientType } from "redis";
 export default (redis: RedisClientType) => {
   const app = Router();
 
-  app.use(express.json());
+  app.use(json() as RequestHandler);
 
   app.get("/ping", (req: Request, res: Response) => {
     res.send("Pong");

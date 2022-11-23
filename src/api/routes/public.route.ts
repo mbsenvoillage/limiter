@@ -8,7 +8,7 @@ export default (
     req: Request,
     res: Response,
     next: NextFunction
-  ) => Promise<Response<any, Record<string, any>> | undefined>
+  ) => Promise<void | Response>
 ) => {
   route.get("/public1", (req: Request, res: Response) => {
     return res.json({ message: "Ok from p1" }).status(200);
