@@ -23,6 +23,14 @@ export default (redis: RedisClientType) => {
     res.send("Pong");
   });
 
+  app.get("/resetlimit", async (req: Request, res: Response) => {
+    let ip = req.ip;
+    let auth = req.headers.authorization;
+    let redisKey = auth ? auth.split(" ")[1] : ip;
+    await redis.del(redisKey);
+    return res.json({ message: "Limit was reset for: " + redisKey });
+  });
+
   authRoute(app);
 
   privateRoutes(
@@ -49,11 +57,11 @@ export default (redis: RedisClientType) => {
     return next(err);
   });
   app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-    res.status(err.name == "NotFoundError" ? 404 : 500);
+    const status = err.name == "NotFoundError" ? 404 : 500;
+    res.status(status);
+    console.error(err.message);
     res.json({
-      errors: {
-        message: err.message,
-      },
+      message: status == 500 ? "Internal Server Error" : err.message,
     });
   });
 
