@@ -21,13 +21,12 @@ export default function limiter(
     let key = auth ? auth.split(" ")[1] : ip;
 
     const keyExists = await redis.exists(key);
+    hits = await redis.incrBy(key, currentRouteWeight);
 
     if (!keyExists) {
-      hits = await redis.incrBy(key, currentRouteWeight);
       await redis.expire(key, timeFrame);
       ttl = timeFrame;
     } else {
-      hits = await redis.incrBy(key, currentRouteWeight);
       ttl = await redis.ttl(key);
     }
 
