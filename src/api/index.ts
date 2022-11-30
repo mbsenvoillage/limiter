@@ -13,8 +13,9 @@ import authRoute from "./routes/auth.route";
 import isAuthenticated from "./middlewares/isAuthenticated.middleware";
 import limiter from "./middlewares/limiter.middleware";
 import { RedisClientType } from "redis";
+import AuthenticationService from "../services/auth.service";
 
-export default (redis: RedisClientType) => {
+export default (redis: RedisClientType, authService: AuthenticationService) => {
   const app = Router();
 
   app.use(json() as RequestHandler);
@@ -33,16 +34,20 @@ export default (redis: RedisClientType) => {
 
   authRoute(app);
 
-  privateRoutes(
-    app,
-    isAuthenticated,
-    limiter(config.limiter.timeWindow, config.limiter.public.maxRequests, redis)
+  const publicLimiter = authService.limitRequests(
+    config.limiter.timeWindow,
+    config.limiter.public.maxRequests,
+    redis
+  );
+  const privateLimiter = authService.limitRequests(
+    config.limiter.timeWindow,
+    config.limiter.private.maxRequests,
+    redis
   );
 
-  publicRoutes(
-    app,
-    limiter(config.limiter.timeWindow, config.limiter.public.maxRequests, redis)
-  );
+  privateRoutes(app, isAuthenticated, limiter(publicLimiter));
+
+  publicRoutes(app, limiter(privateLimiter));
 
   app.use((req: Request, res: Response, next: NextFunction) => {
     const err = new Error("Cannot find what you're looking for");

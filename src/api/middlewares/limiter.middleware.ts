@@ -1,19 +1,13 @@
 import { NextFunction, Request, Response } from "express";
-import config from "../../config/index";
+import config from "../../config";
 
-export default function limiter(
-  timeFrame: number,
-  reqLimit: number,
-  redis: any
-) {
+export default function limiter(limiterFunc: any) {
   return async function limit(req: Request, res: Response, next: NextFunction) {
-    if (!redis || !reqLimit || !timeFrame) {
-      let e = new Error("Limiter arguments must all be truthy");
-      return next(e);
-    }
+    let shouldBlock: boolean;
+    let hits: number;
+    let ttl: number;
+    let reqLimit: number;
     try {
-      let ttl: number;
-      let hits: number;
       let ip = req.ip;
       let auth = req.headers.authorization;
       let path = req.path;
@@ -21,17 +15,12 @@ export default function limiter(
       let currentRouteWeight =
         routeWeights[path as keyof typeof routeWeights] || 1;
       let key = auth ? auth.split(" ")[1] : ip;
+      [shouldBlock, hits, ttl, reqLimit] = await limiterFunc(
+        key,
+        currentRouteWeight
+      );
 
-      const keyExists = await redis.exists(key);
-      hits = await redis.incrBy(key, currentRouteWeight);
-      if (!keyExists) {
-        await redis.expire(key, timeFrame);
-        ttl = timeFrame;
-      } else {
-        ttl = await redis.ttl(key);
-      }
-
-      if (hits > reqLimit) {
+      if (shouldBlock) {
         return res.status(429).json({
           error: `You have made ${hits} request but your account is currently limited at ${reqLimit} requests. You can make a request in ${ttl} s`,
         });
@@ -39,7 +28,6 @@ export default function limiter(
     } catch (e) {
       next(e);
     }
-
     next();
   };
 }
